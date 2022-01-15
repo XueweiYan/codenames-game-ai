@@ -1,6 +1,7 @@
 import numpy as np
 import json
 from termcolor import colored
+from player import Player
 
 class Codenames:
     def __init__(self,
@@ -35,13 +36,21 @@ class Codenames:
         self.display_order = np.random.choice(range(25), 25, replace=False)
         # Compute cosine similarity matrix, shape = (NUM_DICT, NUM_CODENAMES)
         self.cosine_sim_mat = np.matmul(self.dictionary_vecs, self.codenames_vecs.T)
+        # Make a mapping of codenames words id to dictionary words id
+        self.mapping_dict = dict()
+        for idx in self.game_words:
+            match_idx = np.where(self.dictionary_words==self.codenames_words[idx])[0]
+            if len(match_idx) > 0:
+                self.mapping_dict[idx] = match_idx[0]
+            else:
+                self.mapping_dict[idx] = None
         return None
     
-    def initiate_players(team_a_spymaster, team_a_guesser, team_b_spymaster, team_b_guesser):
-        self.ta_ms = Player(team_a_spymaster, self.game_words, self.guess_status, self.cosine_sim_mat, team='a')
-        self.ta_gs = Player(team_a_guesser, self.game_words, self.guess_status, self.cosine_sim_mat, team='a')
-        self.tb_ms = Player(team_b_spymaster, self.game_words, self.guess_status, self.cosine_sim_mat, team='b')
-        self.tb_gs = Player(team_b_guesser, self.game_words, self.guess_status, self.cosine_sim_mat, team='b')
+    def initiate_players(self, team_a_spymaster, team_a_guesser, team_b_spymaster, team_b_guesser):
+        self.ta_ms = Player(team_a_spymaster, self.game_words, self.guess_status, self.cosine_sim_mat, self.mapping_dict, team='a')
+        self.ta_gs = Player(team_a_guesser, self.game_words, self.guess_status, self.cosine_sim_mat, self.mapping_dict, team='a')
+        self.tb_ms = Player(team_b_spymaster, self.game_words, self.guess_status, self.cosine_sim_mat, self.mapping_dict, team='b')
+        self.tb_gs = Player(team_b_guesser, self.game_words, self.guess_status, self.cosine_sim_mat, self.mapping_dict, team='b')
         self.all_players = [self.ta_ms, self.ta_gs, self.tb_ms, self.tb_gs]
         return None
         
@@ -50,10 +59,18 @@ class Codenames:
         for i in range(5):
             for j in range(5):
                 word = self.codenames_words[self.game_words[self.display_order[i*5+j]]]
-                color = color_ref[self.game_word_guessed[self.display_order[i*5+j]]]
+                color = color_ref[self.guess_status[self.display_order[i*5+j]]]
                 print(colored(word, color).center(40), end='')
             print("\n")
         return None
+        
+    def play(self):
+        while True:
+            word_id, word_count = self.ta_ms.give_hint()
+            print("My hint is {}: {}".format(self.dictionary_words[word_id], int(word_count)))
+            self.ta_gs.give_hint()
+            self.tb_ms.give_hint()
+            self.tb_gs.give_hint()
 
 def __main__():
     team_a_spymaster = input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  ")
@@ -67,6 +84,7 @@ def __main__():
         input_encoding[team_b_spymaster],
         input_encoding[team_b_guesser]
     )
+    game.play()
 
 if __name__ == '__main__':
     __main__()
