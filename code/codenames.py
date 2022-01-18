@@ -141,7 +141,7 @@ def __main__():
     tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
     tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
     input_encoding = {'1': 'human', '2': 'ai'}
-    game = Codenames(input_encoding[ta_ms], input_encoding[tb_gs], input_encoding[ta_ms], input_encoding[tb_gs])
+    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs])
     game.play()
 
 if __name__ == '__main__':
