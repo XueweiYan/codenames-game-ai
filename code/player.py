@@ -2,8 +2,11 @@ import numpy as np
 from wordBase import WordBase, Word
 import time
 import re
+
+
 class Player:
-    def __init__(self, player_type, word_base, game_words, guess_status, team, role):
+
+    def __init__(self, player_type, word_base, game_words, guess_status, team, role, seed):
         self.game_words = game_words
         self.guess_status = guess_status
         self.role = role
@@ -12,7 +15,7 @@ class Player:
         else:
             self.team_words_id = range(9, 17)
         if player_type == 'ai':
-            self.player = AI(word_base)
+            self.player = AI(word_base, seed)
         else:
             self.player = Human(word_base)
     
@@ -29,12 +32,14 @@ class Player:
     
 class AI():
     
-    def __init__(self, word_base, threshold=0.1, conservative_index = 0.5):
+    def __init__(self, word_base, seed, threshold=0.1, conservative_index = 0.5):
+        np.random.seed(seed)
         self.word_base = word_base
         self.cosine_sim_mat = word_base.get_cosine_sim_mat()
         self.confusing_cosine_sim_mat = self.cosine_sim_mat + np.random.normal(0, 0.03, word_base.get_cosine_sim_mat().shape)  # MAGIC NUMBER
         self.threshold = threshold
         self.conservative_index = conservative_index
+        np.random.seed(seed)
     
     def give_hint(self, game_words, guess_status, team_words_id):
         team_words = game_words[team_words_id]

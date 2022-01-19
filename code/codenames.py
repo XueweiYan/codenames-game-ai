@@ -6,14 +6,20 @@ from wordBase import WordBase, Word
 import time
 import os
 
+
 class Codenames:
     def __init__(self,
                 team_a_ms, team_a_gs, team_b_ms, team_b_gs,
                 codenames_file='../data/processed_data/codenames_vecs.json',
                 dictionary_file='../data/processed_data/dictionary_vecs.json',
-                threshold=0.1
+                threshold=0.1,
+                seed=None
     ):
-    
+        if seed != None:
+            self.seed = seed
+        else:
+            self.seed = np.random.randint(1e12)
+        np.random.seed(self.seed)
         self.word_base = WordBase(codenames_file, dictionary_file)
         self.threshold = threshold
         self.initiate_game()
@@ -29,10 +35,10 @@ class Codenames:
         return None
     
     def initiate_players(self, team_a_ms, team_a_gs, team_b_ms, team_b_gs):
-        self.ta_ms = Player(team_a_ms, self.word_base, self.game_words, self.guess_status, team='a', role='spymaster')
-        self.ta_gs = Player(team_a_gs, self.word_base, self.game_words, self.guess_status, team='a', role='guesser')
-        self.tb_ms = Player(team_b_ms, self.word_base, self.game_words, self.guess_status, team='b', role='spymaster')
-        self.tb_gs = Player(team_b_gs, self.word_base, self.game_words, self.guess_status, team='b', role='guesser')
+        self.ta_ms = Player(team_a_ms, self.word_base, self.game_words, self.guess_status, team='a', role='spymaster', seed=self.seed)
+        self.ta_gs = Player(team_a_gs, self.word_base, self.game_words, self.guess_status, team='a', role='guesser', seed=self.seed)
+        self.tb_ms = Player(team_b_ms, self.word_base, self.game_words, self.guess_status, team='b', role='spymaster', seed=self.seed)
+        self.tb_gs = Player(team_b_gs, self.word_base, self.game_words, self.guess_status, team='b', role='guesser', seed=self.seed)
         return None
         
     def display_board(self, status_ref, team, turn):
@@ -41,7 +47,7 @@ class Codenames:
         cprint("*" * 85, color)
         cprint("*" + " " * 35 + "TEAM {} TURN {}".format(team, turn) + " " * 35 + "*", color)
         cprint("*" * 85, color)
-        color_ref = {0: 'yellow', 1: 'red', 2: 'cyan', 3: 'white', 4: 'magenta'}
+        color_ref = {0: 'yellow', 1: 'red', 2: 'cyan', 3: 'yellow', 4: 'magenta'}
         for i in range(5):
             for j in range(5):
                 word = self.game_words[self.display_order[i*5+j]].word
@@ -52,7 +58,23 @@ class Codenames:
                     cprint(word.center(17), color, end='')
             print("\n")
         return None
-        
+    
+    def check_game_end(self, team, turn):
+        other_team = {'A': 'B', 'B': 'A'}
+        if 0 not in self.guess_status[:9]:
+            self.display_board(self.guess_status, team, turn)
+            print("GAME OVER IN {} TURNS! TEAM A wins this one by finding out all their words!".format(turn))
+            return True
+        if 0 not in self.guess_status[9:17]:
+            self.display_board(self.guess_status, team, turn)
+            print("GAME OVER IN {} TURNS! TEAM B wins this one by finding out all their words!".format(turn))
+            return True
+        if self.guess_status[-1] != 0:
+            self.display_board(self.guess_status, team, turn)
+            print("GAME OVER IN {} TURNS! TEAM {} wins this one as TEAM {} revealed the assassin word!".format(turn, other_team[team], team))
+            return True        
+        return False
+
     def play(self):
         turn = 1
         while True:
@@ -84,13 +106,7 @@ class Codenames:
                     print("TEAM A Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
                     break
-            if 0 not in self.guess_status[0:9]:
-                self.display_board(self.guess_status, 'A', turn)
-                print("GAME OVER IN {} TURNS! TEAM A wins this one by finding out all their words!".format(turn))
-                break
-            if self.guess_status[-1] != 0:
-                self.display_board(self.guess_status, 'A', turn)
-                print("GAME OVER IN {} TURNS! TEAM B wins this one as TEAM A revealed the assassin word!".format(turn))
+            if self.check_game_end('A', turn):
                 break
             print("END OF TURN")
             time.sleep(2)
@@ -122,18 +138,14 @@ class Codenames:
                     print("TEAM B Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
                     break
-            if 0 not in self.guess_status[9:17]:
-                self.display_board(self.guess_status, 'B', turn)
-                print("GAME OVER IN {} TURNS! TEAM B wins this one by finding out all their words!".format(turn))
-                break
-            if self.guess_status[-1] != 0:
-                self.display_board(self.guess_status, 'B', turn)
-                print("GAME OVER IN {} TURNS! TEAM A wins this one as TEAM A revealed the assassin word!".format(turn))
+            if self.check_game_end('B', turn):
                 break
             print("END OF TURN")
             time.sleep(2)
             
             turn += 1
+        
+        print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
 
 def __main__():
     ta_ms = input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  ")
@@ -141,7 +153,9 @@ def __main__():
     tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
     tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
     input_encoding = {'1': 'human', '2': 'ai'}
-    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs])
+    seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
+    seed = int(seed) if seed!="" else None
+    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], seed=seed)
     game.play()
 
 if __name__ == '__main__':
