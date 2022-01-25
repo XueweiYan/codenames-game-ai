@@ -1,14 +1,15 @@
 import numpy as np
 import json
+from nltk import wordnet as wn
 
 class WordBase:
-    def __init__(self, codenames_file, dictionary_file):
+    def __init__(self, codenames_file, dictionary_file, wordnet_type):
         self.codenames_words = self.load_data(codenames_file)
         self.dictionary_words = self.load_data(dictionary_file)
         self.map_codenames_to_dictionary()
         codenames_vecs = np.array([word.get_vector() for word in self.codenames_words])
         dictionary_vecs = np.array([word.get_vector() for word in self.dictionary_words])
-        self.cosine_sim_mat = self.compute_cosine_sim_mat(codenames_vecs, dictionary_vecs) # SHAPE = (NUM_DICT, NUM_CODENAMES)
+        self.sim_mat = self.compute_sim_mat(codenames_vecs, dictionary_vecs, wordnet_type) # SHAPE = (NUM_DICT, NUM_CODENAMES)
         
     def load_data(self, file):
         with open(file) as f:
@@ -18,8 +19,23 @@ class WordBase:
         word_list = [Word(words[i], i, vecs[i]) for i in range(len(words))]
         return word_list
         
-    def compute_cosine_sim_mat(self, codenames_vecs, dictionary_vecs):
-        return np.matmul(dictionary_vecs, codenames_vecs.T)
+    def compute_sim_mat(self, codenames_vecs, dictionary_vecs, wordnet_type):
+        wn_fn_dict = {
+            'path': wn.path_similarity(),
+            'lch': wn.lch_similarity(),
+            'wup': wn.wup_similarity()
+        }
+        if wordnet_type == None:
+            return np.matmul(dictionary_vecs, codenames_vecs.T)
+        else:
+            wn_fn = wn_fn_dict[wordnet_type]
+            sim_mat = np.zeros(len(dictionary_words), len(codenames_words))
+            for i in range(len(dictionary_words)):
+                for j in range(len(codenames_words)):
+                    dtw = wn.synsets(dictionary_words[i])[0]
+                    cnw = wn.synsets(codenames_words[j])[0]
+                    sim_mat[i][j] = wn_fn[dtw, cnw]
+            return sim_mat
     
     def map_codenames_to_dictionary(self):
         '''
@@ -44,8 +60,8 @@ class WordBase:
     def get_dictionary_words(self):
         return self.dictionary_words
     
-    def get_cosine_sim_mat(self):
-        return self.cosine_sim_mat
+    def get_sim_mat(self):
+        return self.sim_mat
     
     def get_cn_to_dict(self):
         return self.cn_to_dict

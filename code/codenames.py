@@ -13,6 +13,7 @@ class Codenames:
                 codenames_file='../data/processed_data/codenames_vecs.json',
                 dictionary_file='../data/processed_data/dictionary_vecs.json',
                 threshold=0.1,
+                wordnet_type='path',
                 seed=None
     ):
         if seed != None:
@@ -20,7 +21,7 @@ class Codenames:
         else:
             self.seed = np.random.randint(1e12)
         np.random.seed(self.seed)
-        self.word_base = WordBase(codenames_file, dictionary_file)
+        self.word_base = WordBase(codenames_file, dictionary_file, wordnet_type)
         self.threshold = threshold
         self.initiate_game()
         self.initiate_players(team_a_ms, team_a_gs, team_b_ms, team_b_gs)
