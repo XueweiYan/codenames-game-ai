@@ -3,40 +3,18 @@ import json
 from nltk.corpus import wordnet as wn
 
 class WordBase:
-    def __init__(self, codenames_file, dictionary_file, wordnet_type):
-        self.codenames_words = self.load_data(codenames_file)
-        self.dictionary_words = self.load_data(dictionary_file)
+    def __init__(self, data_file):
+        self.codenames_words, self.dictionary_words, self.sim_mat = self.load_data(data_file)
         self.map_codenames_to_dictionary()
-        codenames_vecs = np.array([word.get_vector() for word in self.codenames_words])
-        dictionary_vecs = np.array([word.get_vector() for word in self.dictionary_words])
-        self.sim_mat = self.compute_sim_mat(codenames_vecs, dictionary_vecs, wordnet_type) # SHAPE = (NUM_DICT, NUM_CODENAMES)
         
-    def load_data(self, file):
-        with open(file) as f:
-            content = json.load(f)
-        words = np.array(list(content.keys()))
-        vecs = np.array(list(content.values()))
-        word_list = [Word(words[i], i, vecs[i]) for i in range(len(words)) if len(wn.synsets(words[i])) > 0]
-        return word_list
-        
-    def compute_sim_mat(self, codenames_vecs, dictionary_vecs, wordnet_type):
-        wn_fn_dict = {
-            'path': wn.path_similarity,
-            'lch': wn.lch_similarity,
-            'wup': wn.wup_similarity
-        }
-        if wordnet_type == None:
-            return np.matmul(dictionary_vecs, codenames_vecs.T)
-        else:
-            wn_fn = wn_fn_dict[wordnet_type]
-            sim_mat = np.zeros([len(self.dictionary_words), len(self.codenames_words)])
-            
-            for i in range(len(self.dictionary_words)):
-                for j in range(len(self.codenames_words)):
-                    dtw = self.dictionary_words[i].get_wn_synsets()[0]
-                    cnw = self.codenames_words[j].get_wn_synsets()[0]
-                    sim_mat[i][j] = wn_fn(dtw, cnw)
-            return sim_mat
+    def load_data(self, data_file):
+        data = np.load(data_file, allow_pickle=True)
+        cn_words_txt = data['codenames_words']
+        dt_words_txt = data['dictionary_words']
+        sim_mat = data['matrix']
+        cn_words = [Word(cn_words_txt[i], i) for i in range(len(cn_words_txt))]
+        dt_words = [Word(dt_words_txt[i], i) for i in range(len(dt_words_txt))]
+        return cn_words, dt_words, sim_mat
     
     def map_codenames_to_dictionary(self):
         '''
@@ -72,23 +50,15 @@ class WordBase:
         
         
 class Word:
-    def __init__(self, word, index, vector):
+    def __init__(self, word, index):
         self.word = word
         self.index = index
-        self.vector = vector
-        self.wn_synsets = wn.synsets(word)
     
     def get_word(self):
         return self.word
         
     def get_index(self):
         return self.index
-        
-    def get_vector(self):
-        return self.vector
-    
-    def get_wn_synsets(self):
-        return self.wn_synsets
     
     def __eq__(self, other_word):
         if type(other_word) == str:

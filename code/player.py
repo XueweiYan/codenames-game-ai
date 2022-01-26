@@ -34,12 +34,12 @@ class Player:
     
 class AI():
     
-    def __init__(self, word_base, seed, threshold=0.1, conservative_index = 0.5):
+    def __init__(self, word_base, seed, conservative_index = 0.7):
         np.random.seed(seed)
         self.word_base = word_base
         self.sim_mat = word_base.get_sim_mat()
-        self.confusing_sim_mat = self.sim_mat + np.random.normal(0, 0.03, word_base.get_sim_mat().shape)  # MAGIC NUMBER
-        self.threshold = threshold
+        confusing_sd = np.max(self.sim_mat) / 30 # MAGIC NUMBER
+        self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, word_base.get_sim_mat().shape)
         self.conservative_index = conservative_index
         np.random.seed(seed)
     
@@ -72,10 +72,10 @@ class AI():
         ret = []
         for i in range(self.sim_mat.shape[0]):
             lower_bound = np.max(
-                self.sim_mat[i, enemy_words_id] + [self.sim_mat[i, assassin_word_id] * 1.1] + [self.threshold]    # MAGIC NUMBER
+                self.sim_mat[i, enemy_words_id] + [self.sim_mat[i, assassin_word_id] * 1.1]  # MAGIC NUMBER
             )
             suggested_count = np.sum(self.sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
-            weighted_score = np.square(lower_bound) * suggested_count
+            weighted_score = np.square(1 - lower_bound) * suggested_count
             ret.append([lower_bound, suggested_count, weighted_score])
         ret = np.array(ret)
         return ret
@@ -89,7 +89,7 @@ class AI():
         for i in range(self.cosine_sim_mat.shape[0]):
             lower_bound = np.max(
                 [self.cosine_sim_mat[i, neutral_words_id] + 0.025] + [self.cosine_sim_mat[i, opponent_word_id] + 0.05] +
-                [self.cosine_sim_mat[i, assassin_word_id] + 0.1] + [self.threshold]    # MAGIC NUMBER
+                [self.cosine_sim_mat[i, assassin_word_id] + 0.1]   # MAGIC NUMBER
             )
             suggested_count = np.sum(self.cosine_sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
             weighted_score = np.square(lower_bound) * suggested_count
