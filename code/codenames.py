@@ -19,7 +19,7 @@ class Codenames:
         if seed != None:
             self.seed = seed
         else:
-            self.seed = np.random.randint(2 ** 32 - 1)
+            self.seed = np.random.randint(2**32 - 1)
         np.random.seed(self.seed)
         self.word_base = WordBase(codenames_file, dictionary_file, wordnet_type)
         self.threshold = threshold
