@@ -13,13 +13,13 @@ class Codenames:
                 codenames_file='../data/processed_data/codenames_vecs.json',
                 dictionary_file='../data/processed_data/dictionary_vecs.json',
                 threshold=0.1,
-                wordnet_type='path',
+                wordnet_type='wup',
                 seed=None
     ):
         if seed != None:
             self.seed = seed
         else:
-            self.seed = np.random.randint(1e12)
+            self.seed = np.random.randint(2 ** 32 - 1)
         np.random.seed(self.seed)
         self.word_base = WordBase(codenames_file, dictionary_file, wordnet_type)
         self.threshold = threshold

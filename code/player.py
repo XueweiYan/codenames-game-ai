@@ -64,7 +64,7 @@ class AI():
         ret = []
         for i in range(self.sim_mat.shape[0]):
             lower_bound = np.max(
-                self.sim_mat[i, enemy_words_id] + [self.sim_mat[i, assassin_word_id] + 0.1] + [self.threshold]    # MAGIC NUMBER
+                self.sim_mat[i, enemy_words_id] + [self.sim_mat[i, assassin_word_id] * 1.1] + [self.threshold]    # MAGIC NUMBER
             )
             suggested_count = np.sum(self.sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
             weighted_score = np.square(lower_bound) * suggested_count
