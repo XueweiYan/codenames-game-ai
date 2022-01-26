@@ -37,8 +37,8 @@ class AI():
     def __init__(self, word_base, seed, threshold=0.1, conservative_index = 0.5):
         np.random.seed(seed)
         self.word_base = word_base
-        self.cosine_sim_mat = word_base.get_cosine_sim_mat()
-        self.confusing_cosine_sim_mat = self.cosine_sim_mat + np.random.normal(0, 0.03, word_base.get_cosine_sim_mat().shape)  # MAGIC NUMBER
+        self.sim_mat = word_base.get_sim_mat()
+        self.confusing_sim_mat = self.sim_mat + np.random.normal(0, 0.03, word_base.get_sim_mat().shape)  # MAGIC NUMBER
         self.threshold = threshold
         self.conservative_index = conservative_index
         np.random.seed(seed)
@@ -59,7 +59,7 @@ class AI():
         untouched_idx_in_dict = [self.word_base.get_cn_to_dict()[word.get_word()].get_index() for word in untouched_words]
         max_score_id = -1
         max_score = 0
-        for i in range(self.cosine_sim_mat.shape[0]):
+        for i in range(self.sim_mat.shape[0]):
             if (i not in untouched_idx_in_dict) and (score[i, 2] > max_score):
                 max_score_id = i
                 max_score = score[i, 2]
@@ -70,11 +70,11 @@ class AI():
         enemy_words_id = [word.get_index() for word in enemy_words]
         assassin_word_id = assassin_word.get_index()
         ret = []
-        for i in range(self.cosine_sim_mat.shape[0]):
+        for i in range(self.sim_mat.shape[0]):
             lower_bound = np.max(
-                self.cosine_sim_mat[i, enemy_words_id] + [self.cosine_sim_mat[i, assassin_word_id] + 0.1] + [self.threshold]    # MAGIC NUMBER
+                self.sim_mat[i, enemy_words_id] + [self.sim_mat[i, assassin_word_id] * 1.1] + [self.threshold]    # MAGIC NUMBER
             )
-            suggested_count = np.sum(self.cosine_sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
+            suggested_count = np.sum(self.sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
             weighted_score = np.square(lower_bound) * suggested_count
             ret.append([lower_bound, suggested_count, weighted_score])
         ret = np.array(ret)
@@ -100,7 +100,7 @@ class AI():
     def make_guess(self, hint, number, game_words, guess_status):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
         untouched_words_id = [word.get_index() for word in untouched_words]
-        relevant_scores = self.confusing_cosine_sim_mat[hint.get_index(), untouched_words_id]
+        relevant_scores = self.confusing_sim_mat[hint.get_index(), untouched_words_id]
         idx_top_k = np.argpartition(relevant_scores, -number)[-number:]
         idx_top_k_sorted = idx_top_k[np.argsort(relevant_scores[idx_top_k])][::-1]
         return untouched_words[idx_top_k_sorted]
