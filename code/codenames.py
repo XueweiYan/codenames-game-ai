@@ -1,16 +1,17 @@
 import numpy as np
 import json
 from termcolor import colored, cprint
-from player import Player
+from player import Player, AI, Human
 from wordBase import WordBase, Word
+from data_encoding import data_encodings
 import time
 import os
 
 
 class Codenames:
     def __init__(self,
-                team_a_ms, team_a_gs, team_b_ms, team_b_gs,
-                data_file='../data/processed_data/cosine_sim_mat.npz',
+                team_a_ms, team_a_gs, team_b_ms, team_b_gs, alg=None,
+                data_file=None,
                 seed=None
     ):
         if seed != None:
@@ -18,7 +19,18 @@ class Codenames:
         else:
             self.seed = np.random.randint(2**32 - 1)
         np.random.seed(self.seed)
-        self.word_base = WordBase(data_file)
+
+        if alg != None:
+            self.alg = alg
+        else:
+            self.alg = 1 ####replace with the best algorithm later
+        
+        if data_file != None:
+            self.data_file = data_encodings[data_file]
+        else:
+            self.data_file = '../../AI_dataset/cosine_sim_mat.npz' ####replace with best data set later
+
+        self.word_base = WordBase(self.data_file)
         self.initiate_game()
         self.initiate_players(team_a_ms, team_a_gs, team_b_ms, team_b_gs)
 
@@ -32,10 +44,10 @@ class Codenames:
         return None
     
     def initiate_players(self, team_a_ms, team_a_gs, team_b_ms, team_b_gs):
-        self.ta_ms = Player(team_a_ms, self.word_base, self.game_words, self.guess_status, team='a', role='spymaster', seed=self.seed)
-        self.ta_gs = Player(team_a_gs, self.word_base, self.game_words, self.guess_status, team='a', role='guesser', seed=self.seed)
-        self.tb_ms = Player(team_b_ms, self.word_base, self.game_words, self.guess_status, team='b', role='spymaster', seed=self.seed)
-        self.tb_gs = Player(team_b_gs, self.word_base, self.game_words, self.guess_status, team='b', role='guesser', seed=self.seed)
+        self.ta_ms = Player(team_a_ms, self.word_base, self.game_words, self.guess_status, team='a', role='spymaster', alg = self.alg, seed=self.seed)
+        self.ta_gs = Player(team_a_gs, self.word_base, self.game_words, self.guess_status, team='a', role='guesser', alg = self.alg, seed=self.seed)
+        self.tb_ms = Player(team_b_ms, self.word_base, self.game_words, self.guess_status, team='b', role='spymaster', alg = self.alg, seed=self.seed)
+        self.tb_gs = Player(team_b_gs, self.word_base, self.game_words, self.guess_status, team='b', role='guesser', alg = self.alg, seed=self.seed)
         return None
         
     def display_board(self, status_ref, team, turn):
@@ -75,8 +87,10 @@ class Codenames:
     def play(self):
         turn = 1
         while True:
-                    
-            self.display_board(self.word_team, 'A', turn)
+
+            if isinstance(self.ta_ms.player, Human): #only display card identities when the spymaster is a human       
+                self.display_board(self.word_team, 'A', turn)
+            
             word, count = self.ta_ms.give_hint()
             time.sleep(5)
             
@@ -108,7 +122,9 @@ class Codenames:
             print("END OF TURN")
             time.sleep(2)
             
-            self.display_board(self.word_team, 'B', turn)
+            if isinstance(self.tb_ms.player, Human): #only display card identities when the spymaster is a human       
+                self.display_board(self.word_team, 'B', turn)
+            
             word, count = self.tb_ms.give_hint()
             time.sleep(5)
             
@@ -142,6 +158,11 @@ class Codenames:
             
             turn += 1
         
+        #for AI-AI testing
+        with open('../AI_AI_performance.csv', 'a') as f:
+            f.write(str(turn) + ',' + str(self.alg) + self.data_file.split('/')[-1] + ','  + ',' + str(self.seed) + '\n')
+
+
         print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
 
 def __main__():
@@ -150,9 +171,13 @@ def __main__():
     tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
     tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
     input_encoding = {'1': 'human', '2': 'ai'}
+    alg = input("Choose the algorithm for this game [1. Alg 1 / 2. Alg 2]. If no preference, press enter to skip: ")
+    alg = int(alg) if alg != "" else None
+    data_file = input("Choose the data file for this game (a number between 1 and 33). If no preference, press enter to skip: ")
+    data_file = int(data_file) if data_file != "" else None
     seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
     seed = int(seed) if seed!="" else None
-    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], seed=seed)
+    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], alg, data_file, seed=seed)
     game.play()
 
 if __name__ == '__main__':

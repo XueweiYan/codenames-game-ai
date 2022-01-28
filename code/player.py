@@ -6,10 +6,11 @@ import re
 
 class Player:
 
-    def __init__(self, player_type, word_base, game_words, guess_status, team, role, seed):
+    def __init__(self, player_type, word_base, game_words, guess_status, team, role, alg, seed):
         self.game_words = game_words
         self.guess_status = guess_status
         self.role = role
+        self.alg = alg
         if team == 'a':
             self.team_words_id = range(9)
             self.opponent_words_id = range(9, 17) 
@@ -22,7 +23,7 @@ class Player:
             self.player = Human(word_base)
     
     def give_hint(self):
-        return self.player.give_hint(self.game_words, self.guess_status, self.team_words_id)#, self.opponent_words_id)
+        return self.player.give_hint(self.game_words, self.guess_status, self.team_words_id, self.opponent_words_id, self.alg)
     
     def make_guess(self, hint, number):
         return self.player.make_guess(hint, number, self.game_words, self.guess_status)
@@ -43,19 +44,19 @@ class AI():
         self.conservative_index = conservative_index
         np.random.seed(seed)
     
-    def give_hint(self, game_words, guess_status, team_words_id):
+    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id, alg):
         team_words = game_words[team_words_id]
+        opponent_words = game_words[opponent_words_id]
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
         untouched_team_words = np.intersect1d(team_words, untouched_words)
-        untouched_enemy_words = np.intersect1d(np.delete(game_words, team_words_id), untouched_words) #~~~~~remove assassin word?
+        untouched_enemy_words = np.intersect1d(np.delete(game_words, team_words_id), untouched_words)
+        untouched_neutral_words = np.intersect1d(game_words[17:24], untouched_words)
+        untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
         assassin_word = game_words[-1]
-        score = self.compute_score(untouched_team_words, untouched_enemy_words, assassin_word)
-        
-        # opponent_words = game_words[opponent_words_id]
-        # untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
-        # untouched_neutral_words = np.intersect1d(game_words[17:24], untouched_words)
-        # score = self.compute_score_2(untouched_team_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
-        
+        if alg == 1: 
+            score = self.compute_score(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
+        elif alg == 2:
+            score = self.compute_score_2(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
         untouched_idx_in_dict = [self.word_base.get_cn_to_dict()[word.get_word()].get_index() for word in untouched_words]
         max_score_id = -1
         max_score = 0
@@ -65,7 +66,7 @@ class AI():
                 max_score = score[i, 2]
         return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 1])
         
-    def compute_score(self, team_words, enemy_words, assassin_word):
+    def compute_score(self, team_words, enemy_words, neutral_words, opponent_words, assassin_word):
         team_words_id = [word.get_index() for word in team_words]
         enemy_words_id = [word.get_index() for word in enemy_words]
         assassin_word_id = assassin_word.get_index()
@@ -79,20 +80,21 @@ class AI():
             ret.append([lower_bound, suggested_count, weighted_score])
         ret = np.array(ret)
         return ret
-        
-    def compute_score_2(self, team_words, neutral_words, opponent_words, assassin_word): # algo #2: different weights for each type of word(neutral, opponent, assassin)
+    
+    # algo #2: different weights for each type of word(neutral, opponent, assassin)    
+    def compute_score_2(self, team_words, enemy_words, neutral_words, opponent_words, assassin_word): 
         team_words_id = [word.get_index() for word in team_words]
         neutral_words_id = [word.get_index() for word in neutral_words]
         opponent_words_id = [word.get_index() for word in opponent_words]
         assassin_word_id = assassin_word.get_index()
         ret = []
-        for i in range(self.cosine_sim_mat.shape[0]):
+        for i in range(self.sim_mat.shape[0]):
             lower_bound = np.max(
-                [self.cosine_sim_mat[i, neutral_words_id] + 0.025] + [self.cosine_sim_mat[i, opponent_word_id] + 0.05] +
-                [self.cosine_sim_mat[i, assassin_word_id] + 0.1]   # MAGIC NUMBER
+                list(np.concatenate((self.sim_mat[i, neutral_words_id] * 1.025, self.sim_mat[i, opponent_words_id] * 1.05), axis = None)) +
+                [self.sim_mat[i, assassin_word_id] * 1.1]   # MAGIC NUMBER
             )
-            suggested_count = np.sum(self.cosine_sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
-            weighted_score = np.square(lower_bound) * suggested_count
+            suggested_count = np.sum(self.sim_mat[i, team_words_id] > lower_bound * self.conservative_index)
+            weighted_score = np.square(1 - lower_bound) * suggested_count
             ret.append([lower_bound, suggested_count, weighted_score])
         ret = np.array(ret)
         return ret
@@ -109,7 +111,7 @@ class Human():
     def __init__(self, word_base):
         self.word_base = word_base
     
-    def give_hint(self, game_words, guess_status, team_words_id):
+    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id, alg):
         while True:
             user_input = input("It\'s your turn to give a hint. Please type in the word and number of your hint, separated by a single space: ")
             if len(re.findall('^[A-Za-z]+ [0-9]$', user_input)) == 0:
@@ -137,3 +139,5 @@ class Human():
                 break
         return guesses
     
+
+
