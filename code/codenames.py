@@ -191,7 +191,7 @@ class Codenames:
                 else:
                     self.guess_status[idx_in_game_words] = 4
                     break
-            if 0 not in self.guess_status[:17]:
+            if 0 not in self.guess_status[:9] or 0 not in self.guess_status[9:17]:
                 break 
             elif self.guess_status[-1] != 0:
                 self.assassin = True
@@ -214,7 +214,7 @@ class Codenames:
                 else:
                     self.guess_status[idx_in_game_words] = 4
                     break
-            if 0 not in self.guess_status[:17]:
+            if 0 not in self.guess_status[:9] or 0 not in self.guess_status[9:17]:
                 break 
             elif self.guess_status[-1] != 0:
                 self.assassin = True
