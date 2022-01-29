@@ -90,7 +90,6 @@ class Codenames:
         if self.guess_status[-1] != 0:
             self.display_board(self.guess_status, team, turn)
             print("GAME OVER IN {} TURNS! TEAM {} wins this one as TEAM {} revealed the assassin word!".format(turn, other_team[team], team))
-            self.assassin = True
             return True        
         return False
 
@@ -102,16 +101,16 @@ class Codenames:
                 self.display_board(self.word_team, 'A', turn)
             
             word, count = self.ta_ms.give_hint()
-            if self.mode != 'pure_ai': time.sleep(5) 
+            time.sleep(5) 
             
             self.display_board(self.guess_status, 'A', turn)
             print("TEAM A Spymaster: My hint is {}: {}".format(word, count))
             guess = self.ta_gs.make_guess(word, count)
             for word in guess:
-                if self.mode != 'pure_ai': time.sleep(3)
+                time.sleep(3)
                 print("TEAM A Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                if self.mode != 'pure_ai': time.sleep(1.5)
+                time.sleep(1.5)
                 if idx_in_game_words < 9:
                     print("TEAM A Spymaster: That is correct!")
                     self.guess_status[idx_in_game_words] = 1
@@ -130,24 +129,23 @@ class Codenames:
             if self.check_game_end('A', turn):
                 break
             print("END OF TURN")
-            if self.mode != 'pure_ai': time.sleep(2)
+            time.sleep(2)
             
 
-
-            if isinstance(self.tb_ms.player, Human): #only display card identities when the spymaster is a human       
-                self.display_board(self.word_team, 'B', turn)
+            # if isinstance(self.tb_ms.player, Human): #only display card identities when the spymaster is a human       
+            self.display_board(self.word_team, 'B', turn)
             
             word, count = self.tb_ms.give_hint()
-            if self.mode != 'pure_ai': time.sleep(5)
+            time.sleep(5)
             
             self.display_board(self.guess_status, 'B', turn)
             print("TEAM B Spymaster: My hint is {}: {}".format(word, count))
             guess = self.tb_gs.make_guess(word, count)
             for word in guess:
-                if self.mode != 'pure_ai': time.sleep(3)
+                time.sleep(3)
                 print("TEAM B Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                if self.mode != 'pure_ai': time.sleep(1.5)
+                time.sleep(1.5)
                 if idx_in_game_words < 9:
                     print("TEAM B Spymaster: That is incorrect... It is the opponents' word...")
                     self.guess_status[idx_in_game_words] = 1
@@ -166,22 +164,74 @@ class Codenames:
             if self.check_game_end('B', turn):
                 break
             print("END OF TURN")
-            if self.mode != 'pure_ai': time.sleep(2)
+            time.sleep(2)
+            
+            turn += 1
+        
+        print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
+
+
+    def play_AI(self):
+        turn = 1
+        while True:
+            
+            word, count = self.ta_ms.give_hint()
+            
+            guess = self.ta_gs.make_guess(word, count)
+            for word in guess:
+                idx_in_game_words = np.argwhere(self.game_words == word)
+                if idx_in_game_words < 9:
+                    self.guess_status[idx_in_game_words] = 1
+                elif idx_in_game_words < 17:
+                    self.guess_status[idx_in_game_words] = 2
+                    break
+                elif idx_in_game_words < 24:
+                    self.guess_status[idx_in_game_words] = 3
+                    break
+                else:
+                    self.guess_status[idx_in_game_words] = 4
+                    break
+            if 0 not in self.guess_status[:17]:
+                break 
+            elif self.guess_status[-1] != 0:
+                self.assassin = True
+                break      
+
+
+            word, count = self.tb_ms.give_hint()
+            
+            guess = self.tb_gs.make_guess(word, count)
+            for word in guess:
+                idx_in_game_words = np.argwhere(self.game_words == word)
+                if idx_in_game_words < 9:
+                    self.guess_status[idx_in_game_words] = 1
+                    break
+                elif idx_in_game_words < 17:
+                    self.guess_status[idx_in_game_words] = 2
+                elif idx_in_game_words < 24:
+                    self.guess_status[idx_in_game_words] = 3
+                    break
+                else:
+                    self.guess_status[idx_in_game_words] = 4
+                    break
+            if 0 not in self.guess_status[:17]:
+                break 
+            elif self.guess_status[-1] != 0:
+                self.assassin = True
+                break
             
             turn += 1
         
 
-        #for AI-AI testing 
-        if self.mode == 'pure_ai':
-            with open('../AI_AI_performance.csv', 'a') as f:
-                f.write(str(turn) + ',' + 
-                	str(self.assassin) + ',' +
-                	str(self.alg) + ',' + 
-                	self.data_file.split('/')[-1] + ',' + 
-                	str(self.seed) + '\n')
+        #record results
+        with open('../AI_AI_performance.csv', 'a') as f:
+            f.write(str(turn) + ',' + 
+            	str(self.assassin) + ',' +
+            	str(self.alg) + ',' + 
+            	self.data_file.split('/')[-1] + ',' + 
+            	str(self.seed) + '\n')
 
 
-        print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
 
 def __main__():
     ta_ms = input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  ")
@@ -198,7 +248,7 @@ def __main__():
     seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
     seed = int(seed) if seed!="" else None
     game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], mode, alg, data_file, seed=seed)
-    game.play()
+    game.play() if mode == None else game.play_AI()
 
 if __name__ == '__main__':
     __main__()
