@@ -9,16 +9,17 @@ import os
 
 
 class Codenames:
-    def __init__(self,
-                team_a_ms, team_a_gs, team_b_ms, team_b_gs, alg=None,
-                data_file=None,
-                seed=None
+    def __init__(self, 
+                team_a_ms, team_a_gs, team_b_ms, team_b_gs, 
+                mode = None,
+                alg = None,
+                data_file = None,
+                seed = None
     ):
-        if seed != None:
-            self.seed = seed
+        if mode != None:
+            self.mode = mode
         else:
-            self.seed = np.random.randint(2**32 - 1)
-        np.random.seed(self.seed)
+            self.mode = 'normal'
 
         if alg != None:
             self.alg = alg
@@ -29,6 +30,14 @@ class Codenames:
             self.data_file = data_encodings[data_file]
         else:
             self.data_file = '../../AI_dataset/cosine_sim_mat.npz' ####replace with best data set later
+
+        if seed != None:
+            self.seed = seed
+        else:
+            self.seed = np.random.randint(2**32 - 1)
+        np.random.seed(self.seed)
+
+        self.assassin = False #for testing purpose only
 
         self.word_base = WordBase(self.data_file)
         self.initiate_game()
@@ -81,6 +90,7 @@ class Codenames:
         if self.guess_status[-1] != 0:
             self.display_board(self.guess_status, team, turn)
             print("GAME OVER IN {} TURNS! TEAM {} wins this one as TEAM {} revealed the assassin word!".format(turn, other_team[team], team))
+            self.assassin = True
             return True        
         return False
 
@@ -92,16 +102,16 @@ class Codenames:
                 self.display_board(self.word_team, 'A', turn)
             
             word, count = self.ta_ms.give_hint()
-            time.sleep(5)
+            if self.mode != 'pure_ai': time.sleep(5) 
             
             self.display_board(self.guess_status, 'A', turn)
             print("TEAM A Spymaster: My hint is {}: {}".format(word, count))
             guess = self.ta_gs.make_guess(word, count)
             for word in guess:
-                time.sleep(3)
+                if self.mode != 'pure_ai': time.sleep(3)
                 print("TEAM A Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                time.sleep(1.5)
+                if self.mode != 'pure_ai': time.sleep(1.5)
                 if idx_in_game_words < 9:
                     print("TEAM A Spymaster: That is correct!")
                     self.guess_status[idx_in_game_words] = 1
@@ -120,22 +130,24 @@ class Codenames:
             if self.check_game_end('A', turn):
                 break
             print("END OF TURN")
-            time.sleep(2)
+            if self.mode != 'pure_ai': time.sleep(2)
             
+
+
             if isinstance(self.tb_ms.player, Human): #only display card identities when the spymaster is a human       
                 self.display_board(self.word_team, 'B', turn)
             
             word, count = self.tb_ms.give_hint()
-            time.sleep(5)
+            if self.mode != 'pure_ai': time.sleep(5)
             
             self.display_board(self.guess_status, 'B', turn)
             print("TEAM B Spymaster: My hint is {}: {}".format(word, count))
             guess = self.tb_gs.make_guess(word, count)
             for word in guess:
-                time.sleep(3)
+                if self.mode != 'pure_ai': time.sleep(3)
                 print("TEAM B Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                time.sleep(1.5)
+                if self.mode != 'pure_ai': time.sleep(1.5)
                 if idx_in_game_words < 9:
                     print("TEAM B Spymaster: That is incorrect... It is the opponents' word...")
                     self.guess_status[idx_in_game_words] = 1
@@ -154,13 +166,19 @@ class Codenames:
             if self.check_game_end('B', turn):
                 break
             print("END OF TURN")
-            time.sleep(2)
+            if self.mode != 'pure_ai': time.sleep(2)
             
             turn += 1
         
-        #for AI-AI testing
-        with open('../AI_AI_performance.csv', 'a') as f:
-            f.write(str(turn) + ',' + str(self.alg) + self.data_file.split('/')[-1] + ','  + ',' + str(self.seed) + '\n')
+
+        #for AI-AI testing 
+        if self.mode == 'pure_ai':
+            with open('../AI_AI_performance.csv', 'a') as f:
+                f.write(str(turn) + ',' + 
+                	str(self.assassin) + ',' +
+                	str(self.alg) + ',' + 
+                	self.data_file.split('/')[-1] + ',' + 
+                	str(self.seed) + '\n')
 
 
         print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
@@ -171,15 +189,16 @@ def __main__():
     tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
     tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
     input_encoding = {'1': 'human', '2': 'ai'}
+    mode = input("Please enter the mode for this game. Press enter for playing mode: ")
+    mode = mode if mode != "" else None
     alg = input("Choose the algorithm for this game [1. Alg 1 / 2. Alg 2]. If no preference, press enter to skip: ")
     alg = int(alg) if alg != "" else None
     data_file = input("Choose the data file for this game (a number between 1 and 33). If no preference, press enter to skip: ")
     data_file = int(data_file) if data_file != "" else None
     seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
     seed = int(seed) if seed!="" else None
-    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], alg, data_file, seed=seed)
+    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], mode, alg, data_file, seed=seed)
     game.play()
 
 if __name__ == '__main__':
     __main__()
-
