@@ -6,7 +6,8 @@ class WordBase:
     def __init__(self, data_file):
         self.codenames_words, self.dictionary_words, self.sim_mat = self.load_data(data_file)
         self.map_codenames_to_dictionary()
-        
+        self.data_file_name = data_file.split('/')[-1]
+    
     def load_data(self, data_file):
         data = np.load(data_file, allow_pickle=True)
         cn_words_txt = data['codenames_words']
@@ -47,7 +48,10 @@ class WordBase:
     
     def get_dict_to_cn(self):
         return self.dict_to_cn
-        
+    
+    def get_data_file_name(self):
+        return self.data_file_name
+
         
 class Word:
     def __init__(self, word, index):
