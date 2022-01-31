@@ -1,17 +1,26 @@
-import subprocess
+import os
 import numpy as np
 from tqdm import tqdm
 
+##########################
+#  Change Settings Here  #
+##########################
+outfile = '../statistics/AI_AI_performance.csv'
+num_games = 500
+
+# ------------- DO NOT TOUCH CODE BELOW --------------
+if not os.path.isdir('../statistics/'):
+	os.mkdir('../statistics/')
+with open(outfile, 'w') as f:
+    f.write(", ".join(['turn', 'assassin', 'algorithm', 'data', 'seed']) + "\n")
+
 algorithms = ['1', '2'] #all algorithms
 data = [str(i) for i in range(1, 34)] #all 33 dataset
-seeds = [str(i) for i in np.random.randint(2**32 - 1, size = (1000))] #1000 game per combination
-
+seeds = [str(i) for i in np.random.randint(2**31 - 1, size = (num_games))]
 #loop through all combinations between algorithm, dataset, and seed
-for alg in tqdm(algorithms):
-	for d in tqdm(data):
-		for s in seeds:
-			subprocess.call("printf '2\n2\n2\n2\n" + "pure_ai" +"\n" + 
-							alg + "\n" + d + "\n" + s + "'" + "| python3 codenames.py", 
-							shell = True)
-
-
+for alg in algorithms:
+	for d in data:
+		print('----- algorithm={}/2, data={}/33'.format(alg, d))
+		for s in tqdm(seeds):
+			cmd = 'python codenames.py -p 2 2 2 2 -m pure_ai -a {} -d {} -s {} -o {}'.format(alg, d, s, outfile)
+			os.system(cmd)

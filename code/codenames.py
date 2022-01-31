@@ -4,44 +4,22 @@ from termcolor import colored, cprint
 from player import Player, AI, Human
 from wordBase import WordBase, Word
 from data_encoding import data_encodings
+import argparse
 import time
 import os
 
 
 class Codenames:
-    def __init__(self, 
-                team_a_ms, team_a_gs, team_b_ms, team_b_gs, 
-                mode = None,
-                alg = None,
-                data_file = None,
-                seed = None
-    ):
-        if mode != None:
-            self.mode = mode
-        else:
-            self.mode = 'normal'
-
-        if alg != None:
-            self.alg = alg
-        else:
-            self.alg = 1 ####replace with the best algorithm later
-        
-        if data_file != None:
-            self.data_file = data_encodings[data_file]
-        else:
-            self.data_file = '../../AI_dataset/cosine_sim_mat.npz' ####replace with best data set later
-
-        if seed != None:
-            self.seed = seed
-        else:
-            self.seed = np.random.randint(2**32 - 1)
+    def __init__(self, players, mode, alg, data_file, seed, output_file):
+        self.mode = mode
+        self.alg = alg
+        self.seed = seed
+        self.output_file = output_file
         np.random.seed(self.seed)
-
         self.assassin = False #for testing purpose only
-
-        self.word_base = WordBase(self.data_file)
+        self.word_base = WordBase(data_encodings[data_file])
         self.initiate_game()
-        self.initiate_players(team_a_ms, team_a_gs, team_b_ms, team_b_gs)
+        self.initiate_players(players)
 
     def initiate_game(self):
         # Randomly choose 25 words and assign to teams (9 -> red,8 -> blue,7 -> neutral,1 -> assassin)
@@ -52,11 +30,11 @@ class Codenames:
         self.display_order = np.random.choice(range(25), 25, replace=False)
         return None
     
-    def initiate_players(self, team_a_ms, team_a_gs, team_b_ms, team_b_gs):
-        self.ta_ms = Player(team_a_ms, self.word_base, self.game_words, self.guess_status, team='a', role='spymaster', alg = self.alg, seed=self.seed)
-        self.ta_gs = Player(team_a_gs, self.word_base, self.game_words, self.guess_status, team='a', role='guesser', alg = self.alg, seed=self.seed)
-        self.tb_ms = Player(team_b_ms, self.word_base, self.game_words, self.guess_status, team='b', role='spymaster', alg = self.alg, seed=self.seed)
-        self.tb_gs = Player(team_b_gs, self.word_base, self.game_words, self.guess_status, team='b', role='guesser', alg = self.alg, seed=self.seed)
+    def initiate_players(self, players):
+        self.ta_ms = Player(players[0], self.word_base, self.game_words, self.guess_status, team='a', role='spymaster', alg = self.alg, seed=self.seed)
+        self.ta_gs = Player(players[1], self.word_base, self.game_words, self.guess_status, team='a', role='guesser', alg = self.alg, seed=self.seed)
+        self.tb_ms = Player(players[2], self.word_base, self.game_words, self.guess_status, team='b', role='spymaster', alg = self.alg, seed=self.seed)
+        self.tb_gs = Player(players[3], self.word_base, self.game_words, self.guess_status, team='b', role='guesser', alg = self.alg, seed=self.seed)
         return None
         
     def display_board(self, status_ref, team, turn):
@@ -94,6 +72,10 @@ class Codenames:
         return False
 
     def play(self):
+        if self.mode == 'pure_ai':
+            self.play_AI()
+            return None
+        
         turn = 1
         while True:
 
@@ -221,34 +203,46 @@ class Codenames:
                 break
             
             turn += 1
-        
 
         #record results
-        with open('../AI_AI_performance.csv', 'a') as f:
-            f.write(str(turn) + ',' + 
-            	str(self.assassin) + ',' +
-            	str(self.alg) + ',' + 
-            	self.data_file.split('/')[-1] + ',' + 
-            	str(self.seed) + '\n')
+        with open(self.output_file, 'a') as f:
+            f.write(", ".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
 
 
 
-def __main__():
+def interactive_input():
     ta_ms = input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  ")
     ta_gs = input("Choose the player for TEAM A Guesser [1. Human / 2. AI]:  ")
     tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
     tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
     input_encoding = {'1': 'human', '2': 'ai'}
-    mode = input("Please enter the mode for this game. Press enter for playing mode: ")
-    mode = mode if mode != "" else None
+    mode = input("Please enter the mode for this game. Press enter to skip: ")
+    mode = mode if mode != "" else 'normal'
     alg = input("Choose the algorithm for this game [1. Alg 1 / 2. Alg 2]. If no preference, press enter to skip: ")
-    alg = int(alg) if alg != "" else None
+    alg = int(alg) if alg != "" else 1
     data_file = input("Choose the data file for this game (a number between 1 and 33). If no preference, press enter to skip: ")
-    data_file = int(data_file) if data_file != "" else None
+    data_file = int(data_file) if data_file != "" else 1
     seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
-    seed = int(seed) if seed!="" else None
-    game = Codenames(input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs], mode, alg, data_file, seed=seed)
-    game.play() if mode == None else game.play_AI()
+    seed = int(seed) if seed!="" else np.random.randint(2**31 - 1)
+    players = [input_encoding[ta_ms], input_encoding[ta_gs], input_encoding[tb_ms], input_encoding[tb_gs]]
+    game = Codenames(players, mode, alg, data_file, seed)
+    return game
 
 if __name__ == '__main__':
-    __main__()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--players', type=int, nargs='+', default=[2, 2, 2, 2], help='list of player types [1. Human / 2. AI]')
+    parser.add_argument('-m', '--mode', type=str, default='normal', help='mode of the game (normal / pure_ai / debug)')
+    parser.add_argument('-a', '--algorithm', type=int, default=1, help='algorithm used by AI in the game (1. xxx /  2. xxx)')
+    parser.add_argument('-d', '--data_file', type=int, default=1, help='dataset used by AI in the game (1 - 33)')
+    parser.add_argument('-s', '--seed', type=int, default=np.random.randint(2**31 - 1), help='random seed used in this game (0 - 2^32-1)')
+    parser.add_argument('-o', '--output_file', type=str, default=None, help='the file to record statistics')
+    parser.add_argument('-i', '--interactive_input', default=False, action="store_true", help='use this to interactively input the parameters')
+    opt = parser.parse_args()
+    
+    if opt.interactive_input:
+        game = interactive_input()
+    else:
+        input_encoding = {1: 'human', 2: 'ai'}
+        game = Codenames([input_encoding[p] for p in opt.players], opt.mode, opt.algorithm, opt.data_file, opt.seed, opt.output_file)
+
+    game.play()
