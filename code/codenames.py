@@ -206,7 +206,7 @@ class Codenames:
 
         #record results
         with open(self.output_file, 'a') as f:
-            f.write(", ".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
+            f.write(",".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
 
 
 

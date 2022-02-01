@@ -12,7 +12,7 @@ num_games = 300
 if not os.path.isdir('../statistics/'):
 	os.mkdir('../statistics/')
 with open(outfile, 'w') as f:
-    f.write(", ".join(['turn', 'assassin', 'algorithm', 'data', 'seed']) + "\n")
+    f.write(",".join(['turn', 'assassin', 'algorithm', 'data', 'seed']) + "\n")
 
 algorithms = ['1', '2'] #all algorithms
 data = [str(i) for i in range(1, 19)] # Iremoved all dblp datasets for this test
