@@ -7,10 +7,10 @@ conservative_increment = 0.0
 print(" "*20 + "--- CODENAMES GAME WITH AI ---")
 print("Please follow the instructions below to type in the settings for your game...")
 
-ta_ms = input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  ")
-ta_gs = input("Choose the player for TEAM A Guesser [1. Human / 2. AI]:  ")
-tb_ms = input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  ")
-tb_gs = input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  ")
+ta_ms = str(input("Choose the player for TEAM A Spymaster [1. Human / 2. AI]:  "))
+ta_gs = str(input("Choose the player for TEAM A Guesser [1. Human / 2. AI]:  "))
+tb_ms = str(input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  "))
+tb_gs = str(input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  "))
 players = " ".join([ta_ms, ta_gs, tb_ms, tb_gs])
 
 mode = input("Please set the mode for this game. Press enter to skip [normal / pure_ai / debug]: ")

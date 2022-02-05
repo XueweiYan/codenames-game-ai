@@ -32,7 +32,6 @@ def parseData(filename):
         l = l.translate(translator) 
         #tokenize words
         words = l.strip().split()
-        #stem words (find the root word)
         if len(words) != 0: 
             data.append(words)
     return data
@@ -43,7 +42,7 @@ data = parseData('../data/raw_data/DBLP.txt')
 #train word2vec model
 model = Word2Vec(data, vector_size=300, window=5, min_count=1, workers=4)
 
-#populate key-value pair (word:vector embeding)
+#populate key-value pair (word:vector embedding)
 codenames_vecs = {}
 dictionary_vecs = {}
 
