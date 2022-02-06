@@ -206,8 +206,8 @@ class Codenames:
 
         #record results
         with open(self.output_file, 'a') as f:
-            f.write(",".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
-
+            f.write(",".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed), 
+                              str(self.ta_ms.player.conservative_base), str(self.ta_ms.player.conservative_increment)]) + "\n")
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--players', type=int, nargs='+', default=[2, 2, 2, 2], help='list of player types [1. Human / 2. AI]')
