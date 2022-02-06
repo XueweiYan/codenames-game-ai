@@ -36,6 +36,8 @@ class Player:
 class AI():
     
     def __init__(self, word_base, seed, conservative_index = 0.7):
+        # temporary measure, only for testing purposes
+        self.dict_sim = np.load("../data/processed_data/10k_dict_to_dict_cosine_sim.npz", allow_pickle=True)['matrix']
         np.random.seed(seed)
         self.word_base = word_base
         self.sim_mat = word_base.get_sim_mat()
@@ -43,8 +45,8 @@ class AI():
         self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, word_base.get_sim_mat().shape)
         self.conservative_index = conservative_index
         np.random.seed(seed)
-    
-    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id, alg):
+
+    def give_hint_DE(self, game_words, guess_status, team_words_id, opponent_words_id, alg):
         team_words = game_words[team_words_id]
         opponent_words = game_words[opponent_words_id]
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
@@ -53,7 +55,7 @@ class AI():
         untouched_neutral_words = np.intersect1d(game_words[17:24], untouched_words)
         untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
         assassin_word = game_words[-1]
-        if alg == 1: 
+        if alg == 1:
             score = self.compute_score(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
         elif alg == 2:
             score = self.compute_score_2(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
@@ -65,6 +67,36 @@ class AI():
                 max_score_id = i
                 max_score = score[i, 2]
         return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 1])
+
+    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id, alg):
+        # Considers the most likely opponent team hint using the same algorithm the current team AI uses,
+        # if the AI's current guess and the enemy's guess are related, the AI skips that word, and goes on to the
+        # next best word.
+        team_words = game_words[team_words_id]
+        opponent_words = game_words[opponent_words_id]
+        untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
+        untouched_team_words = np.intersect1d(team_words, untouched_words)
+        untouched_enemy_words = np.intersect1d(np.delete(game_words, team_words_id), untouched_words)
+        untouched_neutral_words = np.intersect1d(game_words[17:24], untouched_words)
+        untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
+        assassin_word = game_words[-1]
+        if alg == 1:
+            score = self.compute_score(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
+            # uses the current algorithm give_hint uses, except it swaps the opponent and team words
+            enemy_word = self.give_hint_DE(game_words, guess_status, opponent_words_id, team_words_id, alg)[0]
+        elif alg == 2:
+            score = self.compute_score_2(untouched_team_words, untouched_enemy_words, untouched_neutral_words, untouched_opponent_words, assassin_word)
+            enemy_word = self.give_hint_DE(game_words, guess_status, opponent_words_id, team_words_id, alg)[0]
+        untouched_idx_in_dict = [self.word_base.get_cn_to_dict()[word.get_word()].get_index() for word in untouched_words]
+        max_score_id = -1
+        enemy_word_id = enemy_word.get_index()
+        max_score = 0
+        for i in range(self.sim_mat.shape[0]):
+            if (i not in untouched_idx_in_dict) and (score[i, 2] > max_score) and (self.dict_sim[enemy_word_id, max_score_id] < .1):
+                max_score_id = i
+                max_score = score[i, 2]
+        best_word = self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 1])
+        return best_word
         
     def compute_score(self, team_words, enemy_words, neutral_words, opponent_words, assassin_word):
         team_words_id = [word.get_index() for word in team_words]

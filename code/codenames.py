@@ -16,7 +16,7 @@ class Codenames:
         self.seed = seed
         self.output_file = output_file
         np.random.seed(self.seed)
-        self.assassin = False #for testing purpose only
+        self.assassin = False # for testing purpose only
         self.word_base = WordBase(data_encodings[data_file])
         self.initiate_game()
         self.initiate_players(players)
