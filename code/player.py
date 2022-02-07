@@ -56,7 +56,6 @@ class AI():
         untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
         untouched_neutral_words = np.intersect1d(neutral_words, untouched_words)
 
-        print(self.conservative_base + (25 - len(untouched_words)) * self.conservative_increment)
         ci = np.max([self.conservative_base + (25 - len(untouched_words)) * self.conservative_increment, 1])
         score = self.compute_score(untouched_team_words, untouched_neutral_words, untouched_opponent_words, assassin_word, ci)
 
