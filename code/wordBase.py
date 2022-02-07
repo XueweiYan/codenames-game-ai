@@ -4,7 +4,7 @@ from nltk.corpus import wordnet as wn
 
 class WordBase:
     def __init__(self, data_file):
-        self.codenames_words, self.dictionary_words, self.sim_mat = self.load_data(data_file)
+        self.load_data(data_file)
         self.map_codenames_to_dictionary()
         self.data_file_name = data_file.split('/')[-1]
     
@@ -12,10 +12,13 @@ class WordBase:
         data = np.load(data_file, allow_pickle=True)
         cn_words_txt = data['codenames_words']
         dt_words_txt = data['dictionary_words']
-        sim_mat = data['matrix']
-        cn_words = [Word(cn_words_txt[i], i) for i in range(len(cn_words_txt))]
-        dt_words = [Word(dt_words_txt[i], i) for i in range(len(dt_words_txt))]
-        return cn_words, dt_words, sim_mat
+        self.sim_mat = data['matrix']
+        self.conservative_base = data['cb']
+        self.conservative_increment = data['ci']
+        self.threshold = data['threshold']
+        self.codenames_words = [Word(cn_words_txt[i], i) for i in range(len(cn_words_txt))]
+        self.dictionary_words = [Word(dt_words_txt[i], i) for i in range(len(dt_words_txt))]
+        return None
     
     def map_codenames_to_dictionary(self):
         '''
@@ -43,6 +46,15 @@ class WordBase:
     def get_sim_mat(self):
         return self.sim_mat
     
+    def get_conservative_base(self):
+        return self.conservative_base
+    
+    def get_conservative_increment(self):
+        return self.conservative_increment
+    
+    def get_threshold(self):
+        return self.threshold
+
     def get_cn_to_dict(self):
         return self.cn_to_dict
     

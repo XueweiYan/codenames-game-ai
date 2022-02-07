@@ -10,16 +10,15 @@ import os
 
 
 class Codenames:
-    def __init__(self, players, mode, alg, data_file, cb, ci, seed, output_file):
+    def __init__(self, players, mode, data_file, seed, output_file):
         self.mode = mode
-        self.alg = alg
         self.seed = seed
         self.output_file = output_file
         np.random.seed(self.seed)
         self.assassin = False #for testing purpose only
         self.word_base = WordBase(data_encodings[data_file])
         self.initiate_game()
-        self.initiate_players(players, cb, ci)
+        self.initiate_players(players)
 
     def initiate_game(self):
         # Randomly choose 25 words and assign to teams (9 -> red,8 -> blue,7 -> neutral,1 -> assassin)
@@ -30,11 +29,11 @@ class Codenames:
         self.display_order = np.random.choice(range(25), 25, replace=False)
         return None
     
-    def initiate_players(self, players, cb, ci):
-        self.ta_ms = Player(players[0], self.word_base, self.game_words, self.guess_status, 'a', 'spymaster', self.alg, self.seed, cb, ci)
-        self.ta_gs = Player(players[1], self.word_base, self.game_words, self.guess_status, 'a', 'guesser', self.alg, self.seed, cb, ci)
-        self.tb_ms = Player(players[2], self.word_base, self.game_words, self.guess_status, 'b', 'spymaster', self.alg, self.seed, cb, ci)
-        self.tb_gs = Player(players[3], self.word_base, self.game_words, self.guess_status, 'b', 'guesser', self.alg, self.seed, cb, ci)
+    def initiate_players(self, players):
+        self.ta_ms = Player(players[0], players[1], self.word_base, self.game_words, self.guess_status, 'a', 'spymaster', self.seed)
+        self.ta_gs = Player(players[1], players[0], self.word_base, self.game_words, self.guess_status, 'a', 'guesser', self.seed)
+        self.tb_ms = Player(players[2], players[3], self.word_base, self.game_words, self.guess_status, 'b', 'spymaster', self.seed)
+        self.tb_gs = Player(players[3], players[2], self.word_base, self.game_words, self.guess_status, 'b', 'guesser', self.seed)
         return None
         
     def display_board(self, status_ref, team, turn):
@@ -206,16 +205,13 @@ class Codenames:
 
         #record results
         with open(self.output_file, 'a') as f:
-            f.write(",".join([str(turn), str(self.assassin), str(self.alg), self.word_base.get_data_file_name(), str(self.seed), 
-                              str(self.ta_ms.player.conservative_base), str(self.ta_ms.player.conservative_increment)]) + "\n")
+            f.write(",".join([str(turn), str(self.assassin), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--players', type=int, nargs='+', default=[2, 2, 2, 2], help='list of player types [1. Human / 2. AI]')
     parser.add_argument('-m', '--mode', type=str, default='normal', help='mode of the game (normal / pure_ai / debug)')
-    parser.add_argument('-a', '--algorithm', type=int, default=1, help='algorithm used by AI in the game (1. xxx /  2. xxx)')
     parser.add_argument('-d', '--data_file', type=int, default=1, help='dataset used by AI in the game (1 - 33)')
-    parser.add_argument('-cb', '--conservative_base', type=float, default=0.88, help='the basement of conservative index')
-    parser.add_argument('-ci', '--conservative_increment', type=float, default=0.006, help='the increment of conservative index per guessed word')
     parser.add_argument('-s', '--seed', type=int, default=np.random.randint(2**31 - 1), help='random seed used in this game (0 - 2^32-1)')
     parser.add_argument('-o', '--output_file', type=str, default=None, help='the file to record statistics')
     opt = parser.parse_args()
@@ -224,10 +220,7 @@ if __name__ == '__main__':
     game = Codenames(
         [input_encoding[p] for p in opt.players],
         opt.mode,
-        opt.algorithm,
         opt.data_file,
-        opt.conservative_base,
-        opt.conservative_increment,
         opt.seed,
         opt.output_file
     )
