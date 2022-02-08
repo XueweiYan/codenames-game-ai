@@ -15,7 +15,6 @@ class Codenames:
         self.seed = seed
         self.output_file = output_file
         np.random.seed(self.seed)
-        self.assassin = False #for testing purpose only
         self.word_base = WordBase(data_encodings[data_file])
         self.initiate_game()
         self.initiate_players(players)
@@ -67,31 +66,33 @@ class Codenames:
         if self.guess_status[-1] != 0:
             self.display_board(self.guess_status, team, turn)
             print("GAME OVER IN {} TURNS! TEAM {} wins this one as TEAM {} revealed the assassin word!".format(turn, other_team[team], team))
-            return True        
+            return True
         return False
 
+    def record_statistics(self, turn, assassin):
+        with open(self.output_file, 'a') as f:
+            f.write(",".join([turn, assassin, self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
+        return None
+    
     def play(self):
-        if self.mode == 'pure_ai':
-            self.play_AI()
-            return None
-        
         turn = 1
+        assassin = False
         while True:
-
-            # if isinstance(self.ta_ms.player, Human): #only display card identities when the spymaster is a human       
-            self.display_board(self.word_team, 'A', turn)
-            
+            # TEAM A GIVE HINT
+            if isinstance(self.ta_ms.player, Human) or isinstance(self.ta_gs.player, AI):
+                self.display_board(self.word_team, 'A', turn)
+                time.sleep(4 * (self.mode=='interactive'))
             word, count = self.ta_ms.give_hint()
-            time.sleep(5) 
             
+            # TEAM A GUESS
             self.display_board(self.guess_status, 'A', turn)
             print("TEAM A Spymaster: My hint is {}: {}".format(word, count))
             guess = self.ta_gs.make_guess(word, count)
             for word in guess:
-                time.sleep(3)
+                time.sleep(2 * (self.mode=='interactive'))
                 print("TEAM A Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                time.sleep(1.5)
+                time.sleep(1.5 * (self.mode=='interactive'))
                 if idx_in_game_words < 9:
                     print("TEAM A Spymaster: That is correct!")
                     self.guess_status[idx_in_game_words] = 1
@@ -106,27 +107,30 @@ class Codenames:
                 else:
                     print("TEAM A Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
+                    assassin = True
                     break
+            
+            # TEAM A FINISH
             if self.check_game_end('A', turn):
                 break
             print("END OF TURN")
-            time.sleep(2)
-            
+            time.sleep(2 * (self.mode=='interactive'))
 
-            # if isinstance(self.tb_ms.player, Human): #only display card identities when the spymaster is a human       
-            self.display_board(self.word_team, 'B', turn)
-            
+            # TEAM B GIVE HINT
+            if isinstance(self.tb_ms.player, Human) or isinstance(self.tb_gs.player, AI):
+                self.display_board(self.word_team, 'B', turn)
+                time.sleep(4 * (self.mode=='interactive'))
             word, count = self.tb_ms.give_hint()
-            time.sleep(5)
             
+            # TEAM B GUESS
             self.display_board(self.guess_status, 'B', turn)
             print("TEAM B Spymaster: My hint is {}: {}".format(word, count))
             guess = self.tb_gs.make_guess(word, count)
             for word in guess:
-                time.sleep(3)
+                time.sleep(2 * (self.mode=='interactive'))
                 print("TEAM B Guesser: I guess \"{}\" is our word".format(word))
                 idx_in_game_words = np.argwhere(self.game_words == word)
-                time.sleep(1.5)
+                time.sleep(1.5 * (self.mode=='interactive'))
                 if idx_in_game_words < 9:
                     print("TEAM B Spymaster: That is incorrect... It is the opponents' word...")
                     self.guess_status[idx_in_game_words] = 1
@@ -141,78 +145,27 @@ class Codenames:
                 else:
                     print("TEAM B Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
+                    assassin = True
                     break
+            # TEAM B FINISH
             if self.check_game_end('B', turn):
                 break
             print("END OF TURN")
-            time.sleep(2)
-            
+            time.sleep(2 * (self.mode=='interactive'))
+
             turn += 1
         
+        # Wrap up and Recording
         print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
-
-
-    def play_AI(self):
-        turn = 1
-        while True:
-            
-            word, count = self.ta_ms.give_hint()
-            
-            guess = self.ta_gs.make_guess(word, count)
-            for word in guess:
-                idx_in_game_words = np.argwhere(self.game_words == word)
-                if idx_in_game_words < 9:
-                    self.guess_status[idx_in_game_words] = 1
-                elif idx_in_game_words < 17:
-                    self.guess_status[idx_in_game_words] = 2
-                    break
-                elif idx_in_game_words < 24:
-                    self.guess_status[idx_in_game_words] = 3
-                    break
-                else:
-                    self.guess_status[idx_in_game_words] = 4
-                    break
-            if 0 not in self.guess_status[:9] or 0 not in self.guess_status[9:17]:
-                break 
-            elif self.guess_status[-1] != 0:
-                self.assassin = True
-                break      
-
-
-            word, count = self.tb_ms.give_hint()
-            
-            guess = self.tb_gs.make_guess(word, count)
-            for word in guess:
-                idx_in_game_words = np.argwhere(self.game_words == word)
-                if idx_in_game_words < 9:
-                    self.guess_status[idx_in_game_words] = 1
-                    break
-                elif idx_in_game_words < 17:
-                    self.guess_status[idx_in_game_words] = 2
-                elif idx_in_game_words < 24:
-                    self.guess_status[idx_in_game_words] = 3
-                    break
-                else:
-                    self.guess_status[idx_in_game_words] = 4
-                    break
-            if 0 not in self.guess_status[:9] or 0 not in self.guess_status[9:17]:
-                break 
-            elif self.guess_status[-1] != 0:
-                self.assassin = True
-                break
-            
-            turn += 1
-
-        #record results
-        with open(self.output_file, 'a') as f:
-            f.write(",".join([str(turn), str(self.assassin), self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
+        if self.output_file != None:
+            self.record_statistics(str(turn), str(assassin))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--players', type=int, nargs='+', default=[2, 2, 2, 2], help='list of player types [1. Human / 2. AI]')
-    parser.add_argument('-m', '--mode', type=str, default='normal', help='mode of the game (normal / pure_ai / debug)')
-    parser.add_argument('-d', '--data_file', type=int, default=1, help='dataset used by AI in the game (1 - 33)')
-    parser.add_argument('-s', '--seed', type=int, default=np.random.randint(2**31 - 1), help='random seed used in this game (0 - 2^32-1)')
+    parser.add_argument('-m', '--mode', type=str, default='interactive', help='mode of the game (interactive / testing)')
+    parser.add_argument('-d', '--data_file', type=int, default=1, help='dataset used by AI in the game (1. cosine_wiki_30k / 2. wup_wiki_30k)')
+    parser.add_argument('-s', '--seed', type=int, default=np.random.randint(2**31 - 1), help='random seed used in this game (0 - 2^31-1)')
     parser.add_argument('-o', '--output_file', type=str, default=None, help='the file to record statistics')
     opt = parser.parse_args()
 

@@ -10,19 +10,30 @@ class Player:
         self.game_words = game_words
         self.guess_status = guess_status
         self.role = role
+        # Assign word belongings
         if team == 'a':
-            self.team_words_id = range(9)
-            self.opponent_words_id = range(9, 17) 
+            self.team_words = game_words[:9]
+            self.opponent_words = game_words[9:17]
         else:
-            self.team_words_id = range(9, 17)
-            self.opponent_words_id = range(9)
+            self.team_words = game_words[9:17]
+            self.opponent_words = game_words[:9]
+        self.neutral_words = game_words[17:24]
+        self.assassin_word =  game_words[24]
+        # Initiate Player instances
         if player_type == 'ai':
             self.player = AI(teammate_type, word_base, seed)
         else:
             self.player = Human(word_base)
     
     def give_hint(self):
-        return self.player.give_hint(self.game_words, self.guess_status, self.team_words_id, self.opponent_words_id)
+        return self.player.give_hint(
+            self.game_words,
+            self.guess_status,
+            self.team_words,
+            self.opponent_words,
+            self.neutral_words,
+            self.assassin_word
+        )
     
     def make_guess(self, hint, number):
         return self.player.make_guess(hint, number, self.game_words, self.guess_status)
@@ -44,14 +55,8 @@ class AI():
         confusing_sd = 0.025 # MAGIC NUMBER
         self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
     
-    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id):
-        
+    def give_hint(self, game_words, guess_status, team_words, opponent_words, neutral_words, assassin_word):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
-        team_words = game_words[team_words_id]
-        opponent_words = game_words[opponent_words_id]
-        neutral_words = game_words[17:24]
-        assassin_word = game_words[-1]
-
         untouched_team_words = np.intersect1d(team_words, untouched_words)
         untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
         untouched_neutral_words = np.intersect1d(neutral_words, untouched_words)
@@ -63,11 +68,11 @@ class AI():
         max_score_id = -1
         max_score = 0
         for i in range(self.sim_mat.shape[0]):
-            if (i not in untouched_idx_in_dict) and (score[i, 2] > max_score):
+            if (i not in untouched_idx_in_dict) and (score[i, 1] > max_score):
                 max_score_id = i
-                max_score = score[i, 2]
+                max_score = score[i, 1]
         
-        return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 1])
+        return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 0])
         
     def compute_score(self, team_words, neutral_words, opponent_words, assassin_word, ci): 
         team_words_id = [word.get_index() for word in team_words]
@@ -76,20 +81,24 @@ class AI():
         assassin_word_id = assassin_word.get_index()
         ret = []
         for i in range(self.sim_mat.shape[0]):
-            lower_bound = np.max(
-                np.concatenate([self.sim_mat[i, neutral_words_id] * 1.05, self.sim_mat[i, opponent_words_id] * 1.1, self.sim_mat[i, assassin_word_id] * 1.2], axis = None)  # MAGIC NUMBER
-            )
+            lower_bound = np.max(np.concatenate([self.sim_mat[i, neutral_words_id] * 1.05,
+                self.sim_mat[i, opponent_words_id] * 1.1,
+                self.sim_mat[i, assassin_word_id] * 1.2],
+                axis = None
+            ))
+            # Human interpretable boundary
             if self.teammate == 'human':
-                lower_bound = np.max(lower_bound, self.human_threshold)
-            # Compute the space between lower bound and the lowest score of the valid ally words (can be negative)
+                lower_bound = np.max([lower_bound, self.human_threshold])
+            # Get ally word scores that are higher than the bound
             valid_scores = self.sim_mat[i, np.where(self.sim_mat[i, team_words_id] > lower_bound * ci)][0]
             suggested_count = len(valid_scores)
             if suggested_count > 0:
+                # Compute the numerical space between lower bound and the lowest score of the valid ally words (can be negative)
                 safe_space = np.min(valid_scores) - lower_bound
             else:
                 safe_space = 0
-            rectified_score = suggested_count + safe_space
-            ret.append([lower_bound, suggested_count, rectified_score])
+            modified_score = suggested_count + safe_space
+            ret.append([suggested_count, modified_score])
         ret = np.array(ret)
         return ret
     
@@ -105,7 +114,7 @@ class Human():
     def __init__(self, word_base):
         self.word_base = word_base
     
-    def give_hint(self, game_words, guess_status, team_words_id, opponent_words_id):
+    def give_hint(self, game_words, guess_status, team_words, opponent_words, neutral_words, assassin_word):
         while True:
             user_input = input("It\'s your turn to give a hint. Please type in the word and number of your hint, separated by a single space: ")
             if len(re.findall('^[A-Za-z]+ [0-9]$', user_input)) == 0:
@@ -133,5 +142,3 @@ class Human():
                 break
         return guesses
     
-
-

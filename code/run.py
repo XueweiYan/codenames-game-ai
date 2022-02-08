@@ -10,10 +10,10 @@ tb_ms = str(input("Choose the player for TEAM B Spymaster [1. Human / 2. AI]:  "
 tb_gs = str(input("Choose the player for TEAM B Guesser [1. Human / 2. AI]:  "))
 players = " ".join([ta_ms, ta_gs, tb_ms, tb_gs])
 
-mode = input("Please set the mode for this game. Press enter to skip [normal / pure_ai / debug]: ")
-mode = mode if mode != "" else 'normal'
+mode = input("Please set the mode for this game. Press enter to skip [interactive / testing]: ")
+mode = mode if mode != "" else 'interactive'
 
-data_file = input("Choose the data file for this game. If no preference, press enter to skip [TODO OPTIONS]: ")
+data_file = input("Choose the data file for this game. If no preference, press enter to skip [1. cosine_wiki_30k / 2. wup_wiki_30k]: ")
 data_file = int(data_file) if data_file != "" else 1
 
 seed = input("Please enter the random seed for this game. If no preference, press enter to skip: ")
