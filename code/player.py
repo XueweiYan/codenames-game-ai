@@ -61,7 +61,7 @@ class AI():
         untouched_opponent_words = np.intersect1d(opponent_words, untouched_words)
         untouched_neutral_words = np.intersect1d(neutral_words, untouched_words)
 
-        ci = np.max([self.conservative_base + (25 - len(untouched_words)) * self.conservative_increment, 1])
+        ci = np.min([self.conservative_base + (25 - len(untouched_words)) * self.conservative_increment, 1])
         score = self.compute_score(untouched_team_words, untouched_neutral_words, untouched_opponent_words, assassin_word, ci)
 
         untouched_idx_in_dict = [self.word_base.get_cn_to_dict()[word.get_word()].get_index() for word in untouched_words]
@@ -71,7 +71,6 @@ class AI():
             if (i not in untouched_idx_in_dict) and (score[i, 1] > max_score):
                 max_score_id = i
                 max_score = score[i, 1]
-        
         return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 0])
         
     def compute_score(self, team_words, neutral_words, opponent_words, assassin_word, ci): 
