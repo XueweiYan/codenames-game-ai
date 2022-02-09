@@ -69,21 +69,27 @@ class Codenames:
             return True
         return False
 
-    def record_statistics(self, turn, assassin):
+    def record_statistics(self, turn, assassin, accuracy):
         with open(self.output_file, 'a') as f:
-            f.write(",".join([turn, assassin, self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
+            f.write(",".join([turn, assassin] + accuracy + [self.word_base.get_data_file_name(), str(self.seed)]) + "\n")
         return None
     
     def play(self):
         turn = 1
         assassin = False
+        ta_accuracy = [0, 0, 0, 0] #[#intended correct, #unintended correct, #wrong, #total intended]
+        tb_accuracy = [0, 0, 0, 0] #[#intended correct, #unintended correct, #wrong, #total intended]
         while True:
             # TEAM A GIVE HINT
             if isinstance(self.ta_ms.player, Human) or isinstance(self.ta_gs.player, AI):
                 self.display_board(self.word_team, 'A', turn)
                 time.sleep(4 * (self.mode=='interactive'))
             word, count = self.ta_ms.give_hint()
-            
+
+            # AI-Human testing: ta_ms = AI, ta_gs = Human
+            intended_words = self.ta_ms.make_guess(word, count)
+            ta_accuracy[3] += count
+
             # TEAM A GUESS
             self.display_board(self.guess_status, 'A', turn)
             print("TEAM A Spymaster: My hint is {}: {}".format(word, count))
@@ -94,24 +100,33 @@ class Codenames:
                 idx_in_game_words = np.argwhere(self.game_words == word)
                 time.sleep(1.5 * (self.mode=='interactive'))
                 if idx_in_game_words < 9:
+                    # AI-Human testing
+                    if word in intended_words: #correct intended
+                        ta_accuracy[0] += 1
+                    else: #correct unintended
+                        ta_accuracy[1] += 1
                     print("TEAM A Spymaster: That is correct!")
                     self.guess_status[idx_in_game_words] = 1
                 elif idx_in_game_words < 17:
                     print("TEAM A Spymaster: That is incorrect... It is the opponents' word...")
                     self.guess_status[idx_in_game_words] = 2
+                    ta_accuracy[2] += 1
                     break
                 elif idx_in_game_words < 24:
                     print("TEAM A Spymaster: That is incorrect... It is a neutral word...")
                     self.guess_status[idx_in_game_words] = 3
+                    ta_accuracy[2] += 1
                     break
                 else:
                     print("TEAM A Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
+                    ta_accuracy[2] += 1
                     assassin = True
                     break
             
             # TEAM A FINISH
             if self.check_game_end('A', turn):
+                game_accuracy = ta_accuracy
                 break
             print("END OF TURN")
             time.sleep(2 * (self.mode=='interactive'))
@@ -122,6 +137,10 @@ class Codenames:
                 time.sleep(4 * (self.mode=='interactive'))
             word, count = self.tb_ms.give_hint()
             
+            # AI-Human testing: tb_ms = AI, tb_gs = Human
+            intended_words = self.tb_ms.make_guess(word, count)
+            tb_accuracy[3] += count
+
             # TEAM B GUESS
             self.display_board(self.guess_status, 'B', turn)
             print("TEAM B Spymaster: My hint is {}: {}".format(word, count))
@@ -134,21 +153,30 @@ class Codenames:
                 if idx_in_game_words < 9:
                     print("TEAM B Spymaster: That is incorrect... It is the opponents' word...")
                     self.guess_status[idx_in_game_words] = 1
+                    tb_accuracy[2] += 1
                     break
                 elif idx_in_game_words < 17:
                     print("TEAM B Spymaster: That is correct!")
                     self.guess_status[idx_in_game_words] = 2
+                    # AI-Human testing
+                    if word in intended_words: #correct intended
+                        tb_accuracy[0] += 1
+                    else: #correct unintended
+                        tb_accuracy[1] += 1
                 elif idx_in_game_words < 24:
                     print("TEAM B Spymaster: That is incorrect... It is a neutral word...")
                     self.guess_status[idx_in_game_words] = 3
+                    tb_accuracy[2] += 1
                     break
                 else:
                     print("TEAM B Spymaster: That is incorrect... It is the assassin word...")
                     self.guess_status[idx_in_game_words] = 4
+                    tb_accuracy[2] += 1
                     assassin = True
                     break
             # TEAM B FINISH
             if self.check_game_end('B', turn):
+                game_accuracy = tb_accuracy
                 break
             print("END OF TURN")
             time.sleep(2 * (self.mode=='interactive'))
@@ -158,7 +186,7 @@ class Codenames:
         # Wrap up and Recording
         print("For reproducibility, the random seed used in this game is {}.".format(self.seed))
         if self.output_file != None:
-            self.record_statistics(str(turn), str(assassin))
+            self.record_statistics(str(turn), str(assassin), [str(i) for i in game_accuracy])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

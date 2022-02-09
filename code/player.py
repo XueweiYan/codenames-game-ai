@@ -52,8 +52,8 @@ class AI():
         self.human_threshold = word_base.get_threshold()
 
         self.sim_mat = word_base.get_sim_mat()
-        confusing_sd = 0.025 # MAGIC NUMBER
-        self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
+        # confusing_sd = 0.025 # MAGIC NUMBER
+        # self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
     
     def give_hint(self, game_words, guess_status, team_words, opponent_words, neutral_words, assassin_word):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
@@ -104,7 +104,7 @@ class AI():
     def make_guess(self, hint, number, game_words, guess_status):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
         untouched_words_id = [word.get_index() for word in untouched_words]
-        relevant_scores = self.confusing_sim_mat[hint.get_index(), untouched_words_id]
+        relevant_scores = self.sim_mat[hint.get_index(), untouched_words_id]
         idx_top_k = np.argpartition(relevant_scores, -number)[-number:]
         idx_top_k_sorted = idx_top_k[np.argsort(relevant_scores[idx_top_k])][::-1]
         return untouched_words[idx_top_k_sorted]
