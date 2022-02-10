@@ -21,4 +21,5 @@ for d in data:
 	for s in tqdm(seeds):
 		cmd = 'python codenames.py -p 2 1 2 1 -m testing -d {} -s {} -o {}'.format(d, s, outfile)
 		os.system(cmd)
+		game += 1
 
