@@ -133,11 +133,14 @@ class Human():
             guesses = input("Please type in your guesses in order separated by a single space. The maximum number of guesses allowed is {}: ".format(number + 1))
             guesses = guesses.split()
             valid_input = True
-            for word in guesses:
-                if word not in game_words or guess_status[np.argwhere(game_words == word)[0]] != 0:
-                    print("Sorry, the word {} you just inputed is not on the board, please try again.")
-                    valid_input = False
-            if valid_input == True and len(guesses) <= number + 1:
-                break
+            if len(guesses) > number + 1:
+                print("The maximum number of guesses allowed is {}, please try again.".format(number + 1))
+            else:
+                for word in guesses:
+                    if word not in game_words or guess_status[np.argwhere(game_words == word)[0]] != 0:
+                        print("Sorry, the word \"{}\" you just inputted is not on the board, please try again.".format(word))
+                        valid_input = False
+                if valid_input == True:
+                    break
         return guesses
     
