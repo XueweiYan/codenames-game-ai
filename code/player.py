@@ -52,8 +52,8 @@ class AI():
         self.human_threshold = word_base.get_threshold()
 
         self.sim_mat = word_base.get_sim_mat()
-        confusing_sd = 0.025 # MAGIC NUMBER
-        self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
+        # confusing_sd = 0.025 # MAGIC NUMBER
+        # self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
     
     def give_hint(self, game_words, guess_status, team_words, opponent_words, neutral_words, assassin_word):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
@@ -97,13 +97,13 @@ class AI():
             suggested_count = len(valid_scores)
             if suggested_count > 1:
                 # Compute the numerical space between lower bound and the lowest score of the valid ally words (can be negative)
-                safe_space = np.min(valid_scores) - lower_bound
-                modified_score = suggested_count + safe_space
+                safe_space = np.min(valid_scores) - lower_bound 
+                modified_score = suggested_count + safe_space + 1  # Plus 1 to accomodate count=0 case
             elif suggested_count == 1:
                 # For single word clues, choose the one that yields maximum similarity
-                modified_score = suggested_count + valid_scores[0]
-            else:
-                modified_score = 0
+                modified_score = suggested_count + valid_scores[0] + 1
+            else:  # suggested_count = 0
+                modified_score = np.max(self.sim_mat[i, team_words_id])
             ret.append([suggested_count, modified_score])
         ret = np.array(ret)
         return ret
@@ -111,7 +111,7 @@ class AI():
     def make_guess(self, hint, number, game_words, guess_status):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
         untouched_words_id = [word.get_index() for word in untouched_words]
-        relevant_scores = self.confusing_sim_mat[hint.get_index(), untouched_words_id]
+        relevant_scores = self.sim_mat[hint.get_index(), untouched_words_id]
         idx_top_k = np.argpartition(relevant_scores, -number)[-number:]
         idx_top_k_sorted = idx_top_k[np.argsort(relevant_scores[idx_top_k])][::-1]
         return untouched_words[idx_top_k_sorted]
@@ -128,7 +128,7 @@ class Human():
                 continue
             word, count = user_input.split()
             if word not in self.word_base.get_dictionary_words():
-                print("Sorry, the word \"{}\" you just inputted is not in our current word base, please try another word.".format(word))
+                print("Sorry, the word \"{}\" you just inputed is not in our current word base, please try another word.".format(word))
                 time.sleep(1)
             else:
                 break
