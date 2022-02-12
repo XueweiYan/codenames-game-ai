@@ -104,6 +104,7 @@ class AI():
                 modified_score = suggested_count + valid_scores[0] + 1
             else:  # suggested_count = 0
                 modified_score = np.max(self.sim_mat[i, team_words_id])
+                suggested_count = 1
             ret.append([suggested_count, modified_score])
         ret = np.array(ret)
         return ret
