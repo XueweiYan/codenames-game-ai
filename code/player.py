@@ -74,9 +74,9 @@ class AI():
         return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 0])
         
     def compute_score(self, team_words, neutral_words, opponent_words, assassin_word, ci): 
-        team_words_id = [word.get_index() for word in team_words]
-        neutral_words_id = [word.get_index() for word in neutral_words]
-        opponent_words_id = [word.get_index() for word in opponent_words]
+        team_words_id = np.array([word.get_index() for word in team_words])
+        neutral_words_id = np.array([word.get_index() for word in neutral_words])
+        opponent_words_id = np.array([word.get_index() for word in opponent_words])
         assassin_word_id = assassin_word.get_index()
         ret = []
         for i in range(self.sim_mat.shape[0]):
@@ -89,15 +89,22 @@ class AI():
             if self.teammate == 'human':
                 lower_bound = np.max([lower_bound, self.human_threshold])
             # Get ally word scores that are higher than the bound
-            valid_scores = self.sim_mat[i, np.where(self.sim_mat[i, team_words_id] > lower_bound * ci)][0]
-            suggested_count = len(valid_scores)
-            if suggested_count > 0:
-                # Compute the numerical space between lower bound and the lowest score of the valid ally words (can be negative)
-                safe_space = np.min(valid_scores) - lower_bound
+            valid_words_ref = np.where(self.sim_mat[i, team_words_id] > (lower_bound * ci))[0]
+            if len(valid_words_ref) > 0:
+                valid_scores = self.sim_mat[i, team_words_id[valid_words_ref]]
             else:
-                safe_space = 0
-            modified_score = suggested_count + safe_space
-            ret.append([suggested_count, modified_score])
+                valid_scores = []
+            suggested_count = len(valid_scores)
+            if suggested_count > 1:
+                # Compute the numerical space between lower bound and the lowest score of the valid ally words (can be negative)
+                safe_space = np.min(valid_scores) - lower_bound 
+                modified_score = suggested_count + safe_space + 1  # Plus 1 to accomodate count=0 case
+            elif suggested_count == 1:
+                # For single word clues, choose the one that yields maximum similarity
+                modified_score = suggested_count + valid_scores[0] + 1
+            else:  # suggested_count = 0
+                modified_score = np.max(self.sim_mat[i, team_words_id])
+            ret.append([1, modified_score])
         ret = np.array(ret)
         return ret
     
