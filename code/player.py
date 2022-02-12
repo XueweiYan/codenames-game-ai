@@ -54,6 +54,8 @@ class AI():
         self.sim_mat = word_base.get_sim_mat()
         # confusing_sd = 0.025 # MAGIC NUMBER
         # self.confusing_sim_mat = self.sim_mat + np.random.normal(0, confusing_sd, self.sim_mat.shape)
+        
+        self.proposed_hint = []
     
     def give_hint(self, game_words, guess_status, team_words, opponent_words, neutral_words, assassin_word):
         untouched_words = game_words[np.argwhere(guess_status<=0).T][0]
@@ -71,6 +73,7 @@ class AI():
             if (i not in untouched_idx_in_dict) and (score[i, 1] > max_score):
                 max_score_id = i
                 max_score = score[i, 1]
+        self.proposed_hint.append(self.word_base.get_dictionary_words()[max_score_id])
         return self.word_base.get_dictionary_words()[max_score_id], int(score[max_score_id, 0])
         
     def compute_score(self, team_words, neutral_words, opponent_words, assassin_word, ci): 
@@ -105,6 +108,8 @@ class AI():
             else:  # suggested_count = 0
                 modified_score = np.max(self.sim_mat[i, team_words_id])
                 suggested_count = 1
+            if self.word_base.get_dictionary_words()[i] in self.proposed_hint:
+                modified_score = modified_score - 1
             ret.append([suggested_count, modified_score])
         ret = np.array(ret)
         return ret
