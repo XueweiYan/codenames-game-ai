@@ -92,7 +92,7 @@ class AI():
             if self.teammate == 'human':
                 lower_bound = np.max([lower_bound, self.human_threshold * ci])
             # Get ally word scores that are higher than the bound
-            valid_words_ref = np.where(self.sim_mat[i, team_words_id] > (lower_bound))[0]
+            valid_words_ref = np.where(self.sim_mat[i, team_words_id] > lower_bound)[0]
             if len(valid_words_ref) > 0:
                 valid_scores = self.sim_mat[i, team_words_id[valid_words_ref]]
             else:
