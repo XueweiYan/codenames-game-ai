@@ -8,7 +8,7 @@ from tqdm import tqdm
 outfile = '../statistics/AI_AI_performance.csv'
 num_games = 100
 algorithms = ['2']  # Change Algorithm
-data = [str(i) for i in range(1, 33)]
+data = [str(i) for i in range(1, 34)]
 
 
 # ------------- DO NOT TOUCH CODE BELOW --------------
