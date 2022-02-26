@@ -7,7 +7,7 @@ from tqdm import tqdm
 ##########################
 outfile = '../statistics/AI_AI_performance.csv'
 num_games = 100
-algorithms = ['2']  # Change Algorithm
+algorithms = ['1', '2'] 
 data = [str(i) for i in range(1, 34)]
 
 
