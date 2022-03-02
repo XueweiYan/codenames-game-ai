@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-outfile = "../ai_human_stats.csv"
+outfile = "../ai_ai_stats.csv"
 num_games = 100
 data = ["1", "2", "3"] #key for target data
 
@@ -19,7 +19,7 @@ for d in data:
 	print('----- data={}/{}'.format(d_num, len(data)))
 	d_num += 1
 	for s in tqdm(seeds):
-		cmd = 'python codenames.py -p 2 1 2 1 -m testing -d {} -s {} -o {}'.format(d, s, outfile)
+		cmd = 'python codenames.py -p 2 2 2 2 -m testing -d {} -s {} -o {}'.format(d, s, outfile)
 		os.system(cmd)
 
 
