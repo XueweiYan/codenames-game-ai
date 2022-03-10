@@ -37,7 +37,7 @@ We also provide the dockerfile and docker image that contains the packages neede
 
 * Follow the instructions to generate your own Codenames game.
 
-### Data collection
+## Data Collection
 Our system provides 3 datasets to serve as the AI vocabulary base:
 * GloVe: 
   * pretrained word embeddings from Wikipedia
