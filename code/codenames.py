@@ -80,7 +80,7 @@ class Codenames:
         game_accuracy = [0, 0, 0, 0] #[#intended correct, #unintended correct, #wrong, #total intended]
         while True:
             # TEAM A GIVE HINT
-            if isinstance(self.ta_ms.player, Human) or isinstance(self.ta_gs.player, AI):
+            if isinstance(self.ta_ms.player, Human):
                 self.display_board(self.word_team, 'A', turn)
                 time.sleep(4 * (self.mode=='interactive'))
             word, count = self.ta_ms.give_hint()
@@ -130,7 +130,7 @@ class Codenames:
             time.sleep(2 * (self.mode=='interactive'))
 
             # TEAM B GIVE HINT
-            if isinstance(self.tb_ms.player, Human) or isinstance(self.tb_gs.player, AI):
+            if isinstance(self.tb_ms.player, Human):
                 self.display_board(self.word_team, 'B', turn)
                 time.sleep(4 * (self.mode=='interactive'))
             word, count = self.tb_ms.give_hint()
