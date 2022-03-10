@@ -14,7 +14,7 @@ RUN echo 'jupyter notebook "$@"' > /run_jupyter.sh && chmod 755 /run_jupyter.sh
 
 USER jovyan
 
-RUN pip install --no-cache-dir numpy termcolor argparse tqdm nltk gensim bs4 lxml
+RUN pip install --no-cache-dir termcolor tqdm nltk
 
 
 
